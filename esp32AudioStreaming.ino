@@ -6,6 +6,7 @@
 #include <WiFiUdp.h>
 #include "AudioManager.h"
 #include "secrets.h"
+#include "DisplayManager.h"
 
 // WiFi network name and password:
 const char * networkName = SECRET_SSID;
@@ -17,14 +18,24 @@ boolean connected = false;
 //The udp library class
 WiFiUDP udp;
 constexpr uint16_t kAudioPort = 4464;
+DisplayManager displayManager = DisplayManager();
 
 void setup(){
   // Initilize hardware serial:
   Serial.begin(115200);
+  Serial.println("Hello");
+  displayManager.Setup();
+  displayManager.setTextColor(TFT_WHITE, TFT_BLACK);
   
+  displayManager.fillScreen(TFT_BLACK);            // Clear screen
+  displayManager.setFreeFont(FF18);                 // Select the font
+  displayManager.drawString(sFF1, 0, 0, GFXFF);// Print the string name of the font
+  displayManager.setFreeFont(FF1);                 // Select the font
+  displayManager.drawString("Connecting to wifi", 0, 30, GFXFF);// Print the string name of the font
   //Connect to the WiFi network
   connectToWiFi(networkName, networkPswd);
   SetupAudio();
+
 }
 
 
@@ -78,12 +89,14 @@ void WiFiEvent(WiFiEvent_t event){
 }
 
 bool receiveAudioBuffers(byte outputAudioBufferLeft[256], byte outputAudioBufferRight[256]){
-  uint8_t buf[512];
+  uint8_t buf[528];
   uint16_t size = udp.parsePacket();
   if (0 < size && size <= sizeof(buf)) {
     udp.read(buf, size);
-    memcpy(outputAudioBufferLeft, buf, 256);
-    memcpy(outputAudioBufferRight, &buf[256], 256);
+    //for (int i=0; i<size; i++) Serial.print(buf[i], HEX);
+    //Serial.println();
+    memcpy(outputAudioBufferLeft, &buf[16], 256);
+    memcpy(outputAudioBufferRight, &buf[16+256], 256);
     return true;
   }
   return false;
